@@ -8,6 +8,7 @@ import googleapiclient.discovery
 import google_auth_oauthlib
 import googleapiclient.errors
 import threading
+import csv
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly",
           "https://www.googleapis.com/auth/youtube"]
@@ -71,6 +72,7 @@ def get_latest_message(live_chat_id):
         if len(latest_message_word_list) > 1:
             print(f'{latest_message_word_list[1]} is requested')
 
+            write_to_csv(latest_message_word_list[1])
             previous_message_published_at = latest_message['id']
             print(previous_message_published_at)
 
@@ -89,9 +91,12 @@ def set_interval(func, sec):
     t.start()
     return t
 
+def write_to_csv(song_title):
+    with open('./song_request.csv', 'a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow([song_title, 5])
 
 if __name__ == '__main__':
-
 
     isOn = True
     token = authorize()
