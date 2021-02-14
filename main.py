@@ -94,7 +94,7 @@ def set_interval(func, sec):
 def write_to_csv(song_title):
     with open('./song_request.csv', 'a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f, delimiter=',')
-        writer.writerow([song_title, 5])
+        writer.writerow([song_title, 1])
 
 if __name__ == '__main__':
 
@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     # while isOn:
 
-    set_interval(get_latest_message,1)
+    set_interval(get_latest_message,5)
 
 
         # user_choice = input("Continue? Y/N: ")
