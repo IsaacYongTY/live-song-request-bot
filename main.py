@@ -33,7 +33,6 @@ def get_livechatid(token, url):
 
     request = youtube.liveBroadcasts().list(
         part='snippet',
-        # broadcastStatus='upcoming',
         id=url.split('/')[-1]
     )
 
@@ -45,73 +44,80 @@ def get_livechatid(token, url):
     return live_chat_id
 
 
-previous_message_published_at = ''
+next_page_token = ''
 
 
-def get_latest_message(live_chat_id):
+def get_latest_message(live_chat_id, page_token):
 
     youtube = token
 
     request = youtube.liveChatMessages().list(
         liveChatId=live_chat_id,
-        part="snippet"
+        part="snippet",
+        pageToken=page_token
     )
 
     response = request.execute()
 
-    latest_message = response['items'][-1]
-    latest_message_word_list = latest_message['snippet']['textMessageDetails']['messageText'].split(' ', 1)
+    # latest_message = response['items'][-1]
+    # latest_message_word_list = latest_message['snippet']['textMessageDetails']['messageText'].split(' ', 1)
 
-    current_message_published_at = latest_message['id']
+    messages_list = response['items']
+    channel_id_list = []
+    song_title_list = []
+    author_name_list = []
+    global next_page_token
+    next_page_token = response['items']['nextPageToken']
 
-    global previous_message_published_at
+    for message in messages_list:
 
-    if latest_message_word_list[0][0] == '!' and previous_message_published_at != current_message_published_at:
-        print('this is a command')
+        word_list = message['snippet']['textMessageDetails']['messageText'].split(' ', 1)
+        command = word_list[0]
 
-        if len(latest_message_word_list) > 1:
-            print(f'{latest_message_word_list[1]} is requested')
+        if command == '!request' && len(word_list) > 1:
+            song_title = word_list[1]
+            print('this is a command')
 
-            write_to_csv(latest_message_word_list[1])
-            previous_message_published_at = latest_message['id']
-            print(previous_message_published_at)
+            channel_id_list.append(response['items']['snippet']['authorChannelId'])
+            song_title_list.append(song_title)
 
+    request = youtube.channels().list(
+        part='snippet',
+        id=','.join(channel_id_list)
+    )
 
+    response = request.execute()
 
-def test():
-    print('Testing')
+    for item in response['items']:
+        author_name_list.append(item['snippet']['title'])
+
+    if len(word_list) > 1:
+        print(f'{song_title} is requested')
+
+        write_to_csv(song_title_list, author_name_list)
 
 
 def set_interval(func, sec):
-    def func_wrapper(live_chat_id):
+    def func_wrapper(live_chat_id,next_page_token):
         set_interval(func,sec)
-        func(live_chat_id)
+        func(live_chat_id, next_page_token)
 
-    t = threading.Timer(sec, func_wrapper, args=[live_chat_id])
+    t = threading.Timer(sec, func_wrapper, args=[live_chat_id, next_page_token])
     t.start()
     return t
 
-def write_to_csv(song_title):
+
+def write_to_csv(song_title_list, author_name_list):
     with open('./song_request.csv', 'a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f, delimiter=',')
-        writer.writerow([song_title, 1])
+
+        for song_title,author in zip(song_title_list,author_name_list):
+            writer.writerow(song_title, author, 1)
 
 if __name__ == '__main__':
 
-    isOn = True
     token = authorize()
-    # url = input("Paste the url: ")
-    url = 'https://youtu.be/0nQiXuexkK8'
+    url = 'https://youtu.be/I_Yv5DCivw0'
     live_chat_id = get_livechatid(token, url)
 
-    # while isOn:
-
-    set_interval(get_latest_message,5)
-
-
-        # user_choice = input("Continue? Y/N: ")
-
-        # if user_choice == 'y':
-        #     isOn = True
-        # elif user_choice == 'n':
-        #     isOn = False
+    set_interval(get_latest_message,30)
