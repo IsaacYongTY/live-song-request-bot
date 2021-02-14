@@ -7,12 +7,13 @@ import os
 import googleapiclient.discovery
 import google_auth_oauthlib
 import googleapiclient.errors
+import threading
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly",
           "https://www.googleapis.com/auth/youtube"]
 
-def get_youtube_data():
 
+def authorize():
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
     api_service_name = "youtube"
@@ -23,20 +24,32 @@ def get_youtube_data():
 
     credentials = flow.run_console()
 
-    youtube = googleapiclient.discovery.build(api_service_name, api_version, credentials=credentials)
+    return googleapiclient.discovery.build(api_service_name, api_version, credentials=credentials)
+
+
+def get_livechatid(token, url):
+    youtube = token
 
     request = youtube.liveBroadcasts().list(
         part='snippet',
-        broadcastStatus='all'
+        # broadcastStatus='upcoming',
+        id=url.split('/')[-1]
     )
 
     broadcast_response = request.execute()
 
-    print(broadcast_response['items'][0])
-
-
     live_chat_id = broadcast_response['items'][0]['snippet']['liveChatId']
     print(live_chat_id)
+
+    return live_chat_id
+
+
+previous_message_published_at = ''
+
+
+def get_latest_message(live_chat_id):
+
+    youtube = token
 
     request = youtube.liveChatMessages().list(
         liveChatId=live_chat_id,
@@ -44,11 +57,56 @@ def get_youtube_data():
     )
 
     response = request.execute()
-    print(response)
+
+    latest_message = response['items'][-1]
+    latest_message_word_list = latest_message['snippet']['textMessageDetails']['messageText'].split(' ', 1)
+
+    current_message_published_at = latest_message['id']
+
+    global previous_message_published_at
+
+    if latest_message_word_list[0][0] == '!' and previous_message_published_at != current_message_published_at:
+        print('this is a command')
+
+        if len(latest_message_word_list) > 1:
+            print(f'{latest_message_word_list[1]} is requested')
+
+            previous_message_published_at = latest_message['id']
+            print(previous_message_published_at)
 
 
-# Press the green button in the gutter to run the script.
+
+def test():
+    print('Testing')
+
+
+def set_interval(func, sec):
+    def func_wrapper(live_chat_id):
+        set_interval(func,sec)
+        func(live_chat_id)
+
+    t = threading.Timer(sec, func_wrapper, args=[live_chat_id])
+    t.start()
+    return t
+
+
 if __name__ == '__main__':
-    get_youtube_data()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+    isOn = True
+    token = authorize()
+    # url = input("Paste the url: ")
+    url = 'https://youtu.be/0nQiXuexkK8'
+    live_chat_id = get_livechatid(token, url)
+
+    # while isOn:
+
+    set_interval(get_latest_message,1)
+
+
+        # user_choice = input("Continue? Y/N: ")
+
+        # if user_choice == 'y':
+        #     isOn = True
+        # elif user_choice == 'n':
+        #     isOn = False
