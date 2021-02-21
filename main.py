@@ -72,9 +72,6 @@ def get_latest_message(live_chat_id):
     channel_id_list = []
     song_request_list = []
 
-
-
-
     print(next_page_token)
 
     print(messages_list)
