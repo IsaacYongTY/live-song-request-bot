@@ -38,12 +38,11 @@ def get_livechatid(token, url):
 
     broadcast_response = request.execute()
 
+    print(broadcast_response['items'])
     live_chat_id = broadcast_response['items'][0]['snippet']['liveChatId']
-    print(live_chat_id)
 
     return live_chat_id
 
-previous_page_token = ''
 next_page_token = ''
 bot_activate_interval = 20
 
@@ -109,7 +108,6 @@ def get_latest_message(live_chat_id):
             write_to_csv(song_request_list)
 
     else:
-
         print('working but empty')
 
     next_page_token = live_chat_response['nextPageToken']
@@ -136,7 +134,8 @@ def write_to_csv(song_request_list):
 if __name__ == '__main__':
 
     token = authorize()
-    url = 'https://youtu.be/I_Yv5DCivw0'
+
+    url = input("Paste the url here: e.g 'https://www.youtube.com/watch?v=CDiInt5YJmk'")
     live_chat_id = get_livechatid(token, url)
 
     set_interval(get_latest_message, bot_activate_interval)
